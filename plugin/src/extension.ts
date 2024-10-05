@@ -10,6 +10,7 @@ import {bufferTime, filter} from "rxjs/operators";
 import {TextReplacedData} from "./interface/data";
 import {Position} from "./interface/position";
 import { ServerControlProvider } from "./class/serverControlProvider";
+import { initializeWebSocket } from "./websocket-server/ws";
 
 const users = new Map<string, User>();
 
@@ -44,7 +45,6 @@ let newLineIds: string[] = [];
 
 
 export async function activate(context: vscode.ExtensionContext) {
-    openWS(userId, userName, userDisplayName, project);
 
     // Chat and Active Users Providers
     chatViewProvider = new ChatViewProvider(context.extensionUri);
@@ -60,11 +60,6 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, chatViewProvider)
     );
 
-    // Register Webview for Server Control (this is where you show IP, port, and the button)
-    context.subscriptions.push(
-        
-    );
-
     // Server Control - Status bar item with IP address
     const ipAddress = 'localhost';
     const serverPort = 8080;  // Assuming your server will run on port 8080
@@ -77,7 +72,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Register the command to start the server
     vscode.commands.registerCommand('vscode-collab.startServerWithLAN', () => {
+        initializeWebSocket();
         vscode.window.showInformationMessage(`Collab Server started at ${ipAddress}:${serverPort}`);
+        setTimeout(() => {openWS(userId, userName, userDisplayName, project)}, 250);
+    });
+
+    // Register the command to join an existing server
+    vscode.commands.registerCommand('vscode-collab.joinServer', () => {
+        let wsAddress = `ws://192.168.12.152:8080`;
+        setTimeout(() => {
+            openWS(userId, userName, userDisplayName, project);
+            vscode.window.showInformationMessage(`Joined Collab Server at ${wsAddress}`);
+        }, 250);
     });
 
     context.subscriptions.push(statusBarItem);
@@ -307,7 +313,7 @@ function getLineCount() {
     return editor.document.lineCount;
 }
 
-export function userJoined(id: string, name: string, displayName: string) {
+export function userJoinedEx(id: string, name: string, displayName: string) {
     users.set(id, new User(id, name, displayName));
     let label = id;
     if (userDisplayMode === "name") {

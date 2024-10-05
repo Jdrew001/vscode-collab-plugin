@@ -27,6 +27,10 @@
       {
         "command": "vscode-collab.startServerWithLAN",
         "title": "Start Collaboration Server with LAN"
+      },
+      {
+        "command": "vscode-collab.joinServer",
+        "title": "Join Collaboration Server"
       }
     ],
     "viewsContainers": {
@@ -105,7 +109,8 @@
     "eslint": "^8.28.0",
     "glob": "^8.0.3",
     "mocha": "^10.1.0",
-    "typescript": "^4.9.3"
+    "typescript": "^4.9.3",
+    "@types/ws": "^8.5.4"
   },
   "dependencies": {
     "rxjs": "^7.8.1",

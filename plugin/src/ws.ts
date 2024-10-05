@@ -13,7 +13,7 @@ import {
     onActiveEditor,
     sendCurrentCursor,
     updateIdArray,
-    userJoined,
+    userJoinedEx,
     userLeft,
 } from "./extension";
 import {
@@ -103,7 +103,7 @@ function handleMessage(msg: Message) {
     switch (msg.operation) {
         case "userJoined":
             const userJoinedData: UserJoinedData = msg.data;
-            userJoined(userJoinedData.userId, userJoinedData.userName, userJoinedData.userDisplayName);
+            userJoinedEx(userJoinedData.userId, userJoinedData.userName, userJoinedData.userDisplayName);
             break;
         case "userLeft":
             const userLeftData: Data = msg.data;

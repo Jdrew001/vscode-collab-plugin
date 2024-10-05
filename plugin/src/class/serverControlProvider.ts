@@ -40,12 +40,20 @@ export class ServerControlProvider implements vscode.TreeDataProvider<ServerCont
     getChildren(element?: ServerControlItem): ServerControlItem[] {
         const ipItem = new ServerControlItem(`IP Address: ${this.serverIp}`, vscode.TreeItemCollapsibleState.None);
         const portItem = new ServerControlItem(`Port: ${this.serverPort}`, vscode.TreeItemCollapsibleState.None);
+        
+        // Button to Start the Server
         const startButton = new ServerControlItem(`Click to Start Collab Server (LAN)`, vscode.TreeItemCollapsibleState.None, {
             command: 'vscode-collab.startServerWithLAN',
             title: 'Start Server'
         });
+        
+        // Button to Join an Existing Server
+        const joinButton = new ServerControlItem(`Click to Join Collab Server`, vscode.TreeItemCollapsibleState.None, {
+            command: 'vscode-collab.joinServer',
+            title: 'Join Server'
+        });
 
-        return [ipItem, portItem, startButton];
+        return [ipItem, portItem, startButton, joinButton];
     }
 }
 

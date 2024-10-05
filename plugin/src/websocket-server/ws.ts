@@ -5,6 +5,7 @@ import {User} from "./interface/user";
 import path from 'path';
 import {randomUUID} from "crypto";
 import os from 'os';
+import { userJoinedEx } from '../extension';
 
 const crdsMap = new Map<string, string[]>
 function getLocalIpAddress(): string | undefined {
@@ -25,36 +26,39 @@ function getLocalIpAddress(): string | undefined {
     return undefined;
 }
 
-const wss = new WebSocketServer({
-    host: getLocalIpAddress(),
-    port: +(process.env.PORT || 8080),
-    path: process.env.WS_PATH,
-});
-
+let wss: WebSocketServer;
 const rooms = new Map<string, Set<User>>();
 
 // Function to get the local IP address
 
-wss.on('listening', () => {
-    console.log(`WebSocket server running on ws://${wss.options.host}:${wss.options.port}.`);
-});
-
-wss.on('connection', function connection(ws) {
-    ws.on('message', (data: any) => {
-        console.log(Buffer.from(data).toString() + "\n");
-        const msg: Message = JSON.parse(Buffer.from(data).toString());
-        handleMessage(msg, ws);
+export function initializeWebSocket() {
+    const wss = new WebSocketServer({
+        host: getLocalIpAddress(),
+        port: +(process.env.PORT || 8080),
+        path: process.env.WS_PATH,
     });
 
-    ws.on('close', (code, reason) => {
-        removeWs(ws);
-        console.log(`Connection closed: code ${code}, reason: ${reason}`);
+    wss.on('listening', () => {
+        console.log(`WebSocket server running on ws://${wss.options.host}:${wss.options.port}.`);
     });
-});
-
-wss.on('error', (error) => {
-    console.log(`Error: ${error}`);
-});
+    
+    wss.on('connection', function connection(ws) {
+        ws.on('message', (data: any) => {
+            console.log(Buffer.from(data).toString() + "\n");
+            const msg: Message = JSON.parse(Buffer.from(data).toString());
+            handleMessage(msg, ws);
+        });
+    
+        ws.on('close', (code, reason) => {
+            removeWs(ws);
+            console.log(`Connection closed: code ${code}, reason: ${reason}`);
+        });
+    });
+    
+    wss.on('error', (error) => {
+        console.log(`Error: ${error}`);
+    });
+}
 
 function handleMessage(msg: Message, ws: WebSocket) {
     switch (msg.operation) {
@@ -85,16 +89,19 @@ function handleMessage(msg: Message, ws: WebSocket) {
 function userJoined(msg: Message, ws: WebSocket) {
     let data: Data = msg.data;
     let project = data.project;
-    let userId = data.userId;
+    let userId = data.userId+"1";
     let userName = data.userName;
     let userDisplayName = data.userDisplayName;
     checkForRoom(project, userId, userName, userDisplayName, ws);
+    userJoinedEx(userId, userName, userDisplayName);
+
 }
 
 function sendUserList(msg: Message, ws: WebSocket) {
     let data: Data = msg.data;
     let project = data.project;
     let users = rooms.get(project);
+    console.log(users);
     let userNames = [];
 
     if (users) {
