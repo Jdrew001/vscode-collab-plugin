@@ -2,9 +2,12 @@
   "name": "vscode-collab-plugin",
   "displayName": "vscode-collab-plugin",
   "publisher": "Pascal-D",
-  "description": "TBA",
+  "description": "VSCode collaboration plugin with active users, chat, and server control features.",
   "version": "0.0.1",
-  "repository": "https://github.com/sekassel-research/vscode-collab-plugin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sekassel-research/vscode-collab-plugin"
+  },
   "engines": {
     "vscode": "^1.72.0"
   },
@@ -20,6 +23,10 @@
       {
         "command": "vscode-collab-plugin.userMapItemClick",
         "title": "User Map Item Click"
+      },
+      {
+        "command": "vscode-collab.startServerWithLAN",
+        "title": "Start Collaboration Server with LAN"
       }
     ],
     "viewsContainers": {
@@ -41,6 +48,10 @@
           "type": "webview",
           "id": "vscode-collab-chatView",
           "name": "Chat"
+        },
+        {
+          "id": "vscode-collab-serverControl",
+          "name": "Server Control"
         }
       ]
     },
@@ -50,7 +61,7 @@
         "vscode-collab.ws-address": {
           "type": "string",
           "default": "ws://localhost:8080",
-          "description": "In this setting the websocket server-address can be changed"
+          "description": "In this setting, the websocket server address can be changed."
         },
         "vscode-collab.displayMode": {
           "type": "string",
@@ -60,17 +71,17 @@
             "name",
             "displayName"
           ],
-          "description": "Here you can select whether to display the users' ID, name, or display name."
+          "description": "Select whether to display the users' ID, name, or display name."
         },
         "vscode-collab.textDocumentChangesBufferTime": {
           "type": "number",
           "default": 150,
-          "description": "Change the Number to configure the time the outgoing changes will be send"
+          "description": "Time (in ms) before sending outgoing text changes."
         },
         "vscode-collab.receivedDocumentChangesBufferTime": {
           "type": "number",
           "default": 50,
-          "description": "Change the Number to configure the time incoming changes will be applied"
+          "description": "Time (in ms) before applying incoming document changes."
         }
       }
     }

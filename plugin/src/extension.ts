@@ -9,6 +9,7 @@ import {Subject} from "rxjs";
 import {bufferTime, filter} from "rxjs/operators";
 import {TextReplacedData} from "./interface/data";
 import {Position} from "./interface/position";
+import { ServerControlProvider } from "./class/serverControlProvider";
 
 const users = new Map<string, User>();
 
@@ -22,6 +23,7 @@ let userDisplayMode = vscode.workspace.getConfiguration("vscode-collab").get<str
 
 let chatViewProvider: ChatViewProvider;
 let activeUsersProvider: ActiveUsersProvider;
+let serverControlProvider: ServerControlProvider;
 const uuid = randomUUID();
 const userId = process.env.USER_ID || process.env.USER || 'userId_' + uuid;
 const userName = process.env.USER_NAME || "userName_" + uuid;
@@ -44,18 +46,48 @@ let newLineIds: string[] = [];
 export async function activate(context: vscode.ExtensionContext) {
     openWS(userId, userName, userDisplayName, project);
 
+    // Chat and Active Users Providers
     chatViewProvider = new ChatViewProvider(context.extensionUri);
     activeUsersProvider = new ActiveUsersProvider(users, userDisplayMode);
+    serverControlProvider = new ServerControlProvider();
 
-    vscode.window.createTreeView("vscode-collab-activeUsers", {treeDataProvider: activeUsersProvider});
+    // Create Tree View for Active Users
+    vscode.window.createTreeView("vscode-collab-activeUsers", { treeDataProvider: activeUsersProvider });
+    vscode.window.createTreeView("vscode-collab-serverControl", { treeDataProvider: serverControlProvider });
 
+    // Register Webview for Chat
     context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, chatViewProvider));
+        vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, chatViewProvider)
+    );
 
+    // Register Webview for Server Control (this is where you show IP, port, and the button)
+    context.subscriptions.push(
+        
+    );
+
+    // Server Control - Status bar item with IP address
+    const ipAddress = 'localhost';
+    const serverPort = 8080;  // Assuming your server will run on port 8080
+
+    // Create a status bar button to start the server
+    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    statusBarItem.command = 'vscode-collab.startServerWithLAN';
+    statusBarItem.text = `Start Collab Server (LAN) ${ipAddress}:${serverPort}`;
+    statusBarItem.show();
+
+    // Register the command to start the server
+    vscode.commands.registerCommand('vscode-collab.startServerWithLAN', () => {
+        vscode.window.showInformationMessage(`Collab Server started at ${ipAddress}:${serverPort}`);
+    });
+
+    context.subscriptions.push(statusBarItem);
+
+    // User Map Item Click Command
     vscode.commands.registerCommand('vscode-collab-plugin.userMapItemClick', (item: UserMapItem) => {
         jumpToUser(item.handleClick());
     });
 
+    // Handle cursor updates
     vscode.window.onDidChangeTextEditorSelection(() => {
         if (blockCursorUpdate) {
             return;
@@ -64,11 +96,11 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     lineCount = getLineCount();
-
     updateReceivedDocumentPipe();
     updateTextDocumentPipe();
 
-    vscode.workspace.onDidChangeTextDocument(changes => { // split this function to make it easier to read
+    // Handle document changes
+    vscode.workspace.onDidChangeTextDocument(changes => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             return;
@@ -81,18 +113,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
             textEdits.filter((edit, index) => {
                 const jsonContent: string = JSON.parse(edit).content;
-                if (
-                    edit === JSON.stringify({uri, range, content}) ||
-                    jsonContent.includes(content)
-                ) {
+                if (edit === JSON.stringify({ uri, range, content }) || jsonContent.includes(content)) {
                     ownText = false;
                     textEdits.splice(index, 1);
                 }
-            }); // cheap fix for the temp-storage of LatexWorkshop
-            const regex = /^\[\d{2}:\d{2}:\d{2}\]\[/; // format [XX:XX:XX][ | Latexworkshop uses root.tex file as temp storage
-            if (regex.test(change.text)) {
-                ownText = false;
-            }
+            });
+
             if (ownText) {
                 blockCursorUpdate = true;
                 if (content !== "") {
@@ -113,10 +139,12 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    // Handle active text editor change
     vscode.window.onDidChangeActiveTextEditor(() => {
         onActiveEditor();
     });
 
+    // Handle configuration changes
     vscode.workspace.onDidChangeConfiguration(event => {
         const rootConfiguration = "vscode-collab.";
         const configuration = event.affectsConfiguration.bind(event);
@@ -149,9 +177,9 @@ export async function activate(context: vscode.ExtensionContext) {
                 const newDisplayMode = vscode.workspace.getConfiguration("vscode-collab").get<string>("displayMode") ?? "name";
                 if (newDisplayMode !== undefined) {
                     userDisplayMode = newDisplayMode;
-                    activeUsersProvider.setDisplayMode(userDisplayMode);
+                    activeUsersProvider.setDisplayMode(newDisplayMode);
                     activeUsersProvider.refresh();
-                    chatViewProvider.chatUpdateDisplayMode(userDisplayMode);
+                    chatViewProvider.chatUpdateDisplayMode(newDisplayMode);
                     for (const user of users) {
                         const path = user[1].position.path;
                         const cursor = user[1].position.cursor;

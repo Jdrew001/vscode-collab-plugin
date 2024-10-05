@@ -4,18 +4,39 @@ import {Data} from "./interface/data";
 import {User} from "./interface/user";
 import path from 'path';
 import {randomUUID} from "crypto";
+import os from 'os';
 
 const crdsMap = new Map<string, string[]>
+function getLocalIpAddress(): string | undefined {
+    const interfaces = os.networkInterfaces();  // Get network interfaces
+
+    for (const ifaceName in interfaces) {
+        const iface = interfaces[ifaceName];
+
+        if (iface) {
+            for (const alias of iface) {
+                // Check for IPv4 and ignore internal (i.e., 127.0.0.1)
+                if (alias.family === 'IPv4' && !alias.internal) {
+                    return alias.address;
+                }
+            }
+        }
+    }
+    return undefined;
+}
 
 const wss = new WebSocketServer({
+    host: getLocalIpAddress(),
     port: +(process.env.PORT || 8080),
     path: process.env.WS_PATH,
 });
 
 const rooms = new Map<string, Set<User>>();
 
+// Function to get the local IP address
+
 wss.on('listening', () => {
-    console.log(`WebSocket server running on ws://localhost:${wss.options.port}.`);
+    console.log(`WebSocket server running on ws://${wss.options.host}:${wss.options.port}.`);
 });
 
 wss.on('connection', function connection(ws) {
